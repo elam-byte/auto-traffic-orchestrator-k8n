@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ats-env
+  namespace: ats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ats-env
+  template:
+    metadata:
+      labels:
+        app: ats-env
+    spec:
+      containers:
+        - name: ats-env
+          image: ats-env:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NATS_URL
+              value: nats://nats.ats.svc.cluster.local:4222
+          volumeMounts:
+            - name: maps
+              mountPath: /maps
+          resources:
+            requests:
+              cpu: 200m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+      volumes:
+        - name: maps
+          persistentVolumeClaim:
+            claimName: maps-pvc

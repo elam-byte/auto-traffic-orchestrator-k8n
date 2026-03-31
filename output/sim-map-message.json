@@ -1,0 +1,8 @@
+{
+  "_comment": "sim.map — published by viz-gateway after a map file is uploaded via POST /map. ats-env reads the file from disk at the given path.",
+  "_subject": "sim.map",
+  "_publisher": "viz-gateway",
+  "_subscriber": "ats-env",
+
+  "mapRef": "/maps/ats-map-v1.json"
+}

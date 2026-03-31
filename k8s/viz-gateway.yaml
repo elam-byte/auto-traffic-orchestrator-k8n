@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: viz-gateway
+  namespace: ats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: viz-gateway
+  template:
+    metadata:
+      labels:
+        app: viz-gateway
+    spec:
+      containers:
+        - name: viz-gateway
+          image: viz-gateway:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NATS_URL
+              value: nats://nats.ats.svc.cluster.local:4222
+            - name: WS_PORT
+              value: "8090"
+            - name: MAPS_DIR
+              value: /maps
+          ports:
+            - containerPort: 8090
+          volumeMounts:
+            - name: maps
+              mountPath: /maps
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: maps
+          persistentVolumeClaim:
+            claimName: maps-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: viz-gateway
+  namespace: ats
+spec:
+  selector:
+    app: viz-gateway
+  type: LoadBalancer   # or NodePort; exposes the WebSocket + HTTP viewer
+  ports:
+    - port: 8090
+      targetPort: 8090

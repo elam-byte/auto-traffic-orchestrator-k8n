@@ -1,0 +1,40 @@
+{
+  "_comment": "VehicleObservation — published by ats-env on subject: sim.obs.{vehicle_id} at 20 Hz",
+
+  "t":     1711886400050,
+  "t_iso": "2024-03-31T12:00:00.050Z",
+
+  "id":      "v-1",
+  "x":       250.5,
+  "y":       196.8,
+  "heading": 0.0,
+  "speed":   7.2,
+
+  "_units": {
+    "x, y":        "meters — origin bottom-left, +x right, +y up",
+    "heading":     "radians — 0 = pointing right (+x axis), CCW positive. π/2 = up, π = left, -π/2 = down",
+    "speed":       "m/s  (8.0 m/s ≈ 29 km/h)",
+    "speed_limit": "m/s",
+    "lane_id":     "lane edge ID in the road graph, format: '{road_id}:{side}' e.g. 'r-1:right'",
+    "road_id":     "road segment ID from the map JSON e.g. 'r-1'"
+  },
+
+  "lane_corridor": [
+    { "x": 251.5, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" },
+    { "x": 252.5, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" },
+    { "x": 260.0, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" },
+    { "x": 270.0, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" },
+    { "x": 280.0, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" },
+    { "x": 290.0, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" },
+    { "x": 300.0, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" },
+    { "x": 310.0, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" },
+    { "x": 320.0, "y": 196.8, "heading": 0.0, "width": 3.5, "speed_limit": 14.0, "lane_id": "r-1:right", "road_id": "r-1" }
+  ],
+
+  "_junction_note": "junction is only present when a fork is within the next 100 m corridor",
+  "junction": {
+    "at_edge":        "r-1:right",
+    "choices":        ["r-6:right", "r-5:left"],
+    "current_choice": "r-6:right"
+  }
+}

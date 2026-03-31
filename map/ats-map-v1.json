@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "version": "ats-map-v1",
+    "unit": "m",
+    "origin": "bottom-left",
+    "world": {
+      "width": 500,
+      "height": 281
+    }
+  },
+  "junctions": [],
+  "roads": [
+    {
+      "id": "r-1",
+      "kind": "line",
+      "start": {
+        "x": 179.9591280653951,
+        "y": 200.07901907356947
+      },
+      "end": {
+        "x": 329.95912806539513,
+        "y": 200.07901907356947
+      },
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    },
+    {
+      "id": "r-3",
+      "kind": "line",
+      "start": {
+        "x": 179.9549378357826,
+        "y": 99.99102425170697
+      },
+      "end": {
+        "x": 329.95493783578263,
+        "y": 99.99102425170697
+      },
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    },
+    {
+      "id": "r-4",
+      "kind": "arc",
+      "center": {
+        "x": 180,
+        "y": 190
+      },
+      "radius": 10.07910194414242,
+      "startAngle": 1.5748514546077106,
+      "endAngle": 3.141592653589793,
+      "clockwise": false,
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    },
+    {
+      "id": "r-7",
+      "kind": "arc",
+      "center": {
+        "x": 180,
+        "y": 110
+      },
+      "radius": 9.965667760845715,
+      "startAngle": 3.141588825716501,
+      "endAngle": -1.5752984717586334,
+      "clockwise": false,
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    },
+    {
+      "id": "r-8",
+      "kind": "line",
+      "start": {
+        "x": 169.92089805585758,
+        "y": 190
+      },
+      "end": {
+        "x": 170.0343322392273,
+        "y": 110.00003814731346
+      },
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    },
+    {
+      "id": "r-9",
+      "kind": "arc",
+      "center": {
+        "x": 330,
+        "y": 190.06050155028103
+      },
+      "radius": 10,
+      "startAngle": 0,
+      "endAngle": 1.5748514546077077,
+      "clockwise": false,
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    },
+    {
+      "id": "r-11",
+      "kind": "arc",
+      "center": {
+        "x": 330,
+        "y": 110
+      },
+      "radius": 10.009077186662209,
+      "startAngle": -1.5752984717586305,
+      "endAngle": 0,
+      "clockwise": false,
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    },
+    {
+      "id": "r-12",
+      "kind": "arc",
+      "center": {
+        "x": 342,
+        "y": 117
+      },
+      "radius": 0,
+      "startAngle": 0,
+      "endAngle": 0,
+      "clockwise": false,
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    },
+    {
+      "id": "r-13",
+      "kind": "line",
+      "start": {
+        "x": 340,
+        "y": 190.06050155028103
+      },
+      "end": {
+        "x": 340.0090771866622,
+        "y": 110
+      },
+      "lanes": {
+        "left": 1,
+        "right": 1,
+        "laneWidth": 3.5
+      }
+    }
+  ],
+  "vehicles": [
+    {
+      "id": "v-14",
+      "x": 213,
+      "y": 198,
+      "heading": 0,
+      "length": 3,
+      "width": 1.5,
+      "color": "#c4215a"
+    },
+    {
+      "id": "v-16",
+      "x": 269,
+      "y": 198,
+      "heading": 0,
+      "length": 3,
+      "width": 1.5,
+      "color": "#2152c4"
+    },
+    {
+      "id": "v-17",
+      "x": 293,
+      "y": 202,
+      "heading": 3.12,
+      "length": 3,
+      "width": 1.5,
+      "color": "#c4a921"
+    },
+    {
+      "id": "v-18",
+      "x": 243.35693583579132,
+      "y": 201.99105245161422,
+      "heading": 3.12,
+      "length": 3,
+      "width": 1.5,
+      "color": "#21c468"
+    }
+  ]
+}

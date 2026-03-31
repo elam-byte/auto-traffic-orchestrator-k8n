@@ -1,0 +1,60 @@
+services:
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--jetstream"]
+
+  ats-env:
+    build:
+      context: ./ats-env
+    environment:
+      NATS_URL: nats://nats:4222
+    volumes:
+      # Shared maps directory: viz-gateway saves uploaded maps here,
+      # ats-env reads them from /maps/{filename}
+      - maps_data:/maps
+    depends_on:
+      - nats
+    restart: unless-stopped
+
+  viz-gateway:
+    build:
+      context: .
+      dockerfile: viz-gateway/Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+      WS_PORT: "8090"
+      MAPS_DIR: /maps
+    volumes:
+      - maps_data:/maps
+    ports:
+      - "8090:8090"
+    depends_on:
+      - nats
+    restart: unless-stopped
+
+  vehicle-orchestrator:
+    build:
+      context: ./vehicle-orchestrator
+    environment:
+      NATS_URL: nats://nats:4222
+      ORCHESTRATION_MODE: docker
+      VEHICLE_IMAGE: vehicle-agent:latest
+      VEHICLE_NETWORK: ats_default
+    volumes:
+      # Mount the Docker socket so the orchestrator can manage containers
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - nats
+    restart: unless-stopped
+
+  # NOTE: vehicle-agent containers are no longer defined statically here.
+  # The vehicle-orchestrator creates one container per vehicle when the map loads.
+  # Containers are named "vehicle-{id}" and join the ats_default network.
+  # To pre-build the image: docker build -t vehicle-agent:latest ./vehicle-agent
+
+volumes:
+  maps_data:
+    driver: local

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ATS Viewer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #111; color: #eee; font-family: monospace; display: flex; flex-direction: column; height: 100vh; }
+    #header { padding: 8px 12px; background: #1a1a1a; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    #header h1 { font-size: 14px; font-weight: normal; letter-spacing: 1px; }
+    #status { font-size: 12px; color: #888; flex: 1; }
+    #status.connected { color: #4caf50; }
+    #status.error { color: #f44336; }
+    #status.uploading { color: #ff9800; }
+    #stats { font-size: 11px; color: #555; }
+    #canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    canvas { display: block; }
+    .btn {
+      background: #2a2a2a; border: 1px solid #444; color: #ccc;
+      padding: 4px 10px; font-size: 11px; font-family: monospace; cursor: pointer;
+      border-radius: 3px;
+    }
+    .btn:hover { background: #333; border-color: #666; }
+    #map-file { display: none; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>ATS VIEWER</h1>
+    <button class="btn" id="load-btn">Load Map JSON</button>
+    <input type="file" id="map-file" accept=".json" />
+    <span id="status">Connecting...</span>
+    <span id="stats"></span>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
+
+  <script>
+  // ─── Map state ────────────────────────────────────────────────────────────────
+  // MAP is populated either from the hardcoded default or from a loaded file.
+  let MAP = {
+    world: { width: 500, height: 281 },
+    roads: []
+  };
+
+  // ─── Canvas setup ─────────────────────────────────────────────────────────────
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('canvas-wrap');
+
+  function resize() {
+    const pw = wrap.clientWidth - 20;
+    const ph = wrap.clientHeight - 20;
+    const scale = Math.min(pw / MAP.world.width, ph / MAP.world.height);
+    canvas.width  = Math.floor(MAP.world.width  * scale);
+    canvas.height = Math.floor(MAP.world.height * scale);
+    canvas._scale = scale;
+    if (lastSnapshot) render(lastSnapshot);
+    else renderEmpty();
+  }
+  window.addEventListener('resize', resize);
+
+  // ─── Coordinate helpers ───────────────────────────────────────────────────────
+  // Map: origin bottom-left, +y up. Canvas: origin top-left, +y down.
+  function toCanvas(x, y) {
+    const s = canvas._scale || 1;
+    return [x * s, (MAP.world.height - y) * s];
+  }
+
+  // ─── Road drawing ─────────────────────────────────────────────────────────────
+  function drawRoads() {
+    ctx.strokeStyle = '#2a2a2a';
+    ctx.lineWidth = 2;
+
+    for (const road of MAP.roads) {
+      if (road.kind === 'line') {
+        const [x1, y1] = toCanvas(road.start.x, road.start.y);
+        const [x2, y2] = toCanvas(road.end.x,   road.end.y);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      } else if (road.kind === 'arc') {
+        const [cx, cy] = toCanvas(road.center.x, road.center.y);
+        const s = canvas._scale || 1;
+        const r = road.radius * s;
+        let span = road.endAngle - road.startAngle;
+        if (!road.clockwise) {
+          if (span < 0) span += 2 * Math.PI;
+        } else {
+          if (span > 0) span -= 2 * Math.PI;
+        }
+        const sa = -road.startAngle;
+        const ea = -road.endAngle;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, sa, ea, span > 0);
+        ctx.stroke();
+      }
+    }
+
+    // Lane centre-lines (dashed)
+    ctx.strokeStyle = '#333';
+    ctx.setLineDash([4, 8]);
+    ctx.lineWidth = 1;
+    for (const road of MAP.roads) {
+      if (road.kind === 'line') {
+        const [x1, y1] = toCanvas(road.start.x, road.start.y);
+        const [x2, y2] = toCanvas(road.end.x,   road.end.y);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      }
+    }
+    ctx.setLineDash([]);
+  }
+
+  // ─── Vehicle drawing ──────────────────────────────────────────────────────────
+  function drawVehicle(v) {
+    const [cx, cy] = toCanvas(v.x, v.y);
+    const s = canvas._scale || 1;
+    const l = (v.length || 3) * s;
+    const w = (v.width  || 1.5) * s;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-v.heading);
+
+    ctx.fillStyle = v.color || '#ffffff';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.5;
+    ctx.fillRect(-l / 2, -w / 2, l, w);
+    ctx.strokeRect(-l / 2, -w / 2, l, w);
+
+    // Direction indicator (front of vehicle)
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillRect(l / 4, -w / 4, l / 4, w / 2);
+
+    // Vehicle ID label
+    ctx.restore();
+    ctx.save();
+    ctx.translate(cx, cy - w / 2 - 6);
+    ctx.fillStyle = '#aaa';
+    ctx.font = `${Math.max(8, 10 * s / 2)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(v.id, 0, 0);
+    ctx.restore();
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
+  function renderEmpty() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#151515';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawRoads();
+  }
+
+  function render(snapshot) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#151515';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawRoads();
+    for (const v of snapshot.vehicles) {
+      drawVehicle(v);
+    }
+    ctx.fillStyle = '#444';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`t=${snapshot.t}ms`, 6, canvas.height - 6);
+  }
+
+  // ─── Map file picker ──────────────────────────────────────────────────────────
+  const loadBtn   = document.getElementById('load-btn');
+  const mapFile   = document.getElementById('map-file');
+  const statusEl  = document.getElementById('status');
+  const statsEl   = document.getElementById('stats');
+
+  loadBtn.addEventListener('click', () => mapFile.click());
+
+  mapFile.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const text = await file.text();
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      setStatus('Failed to parse JSON', 'error');
+      return;
+    }
+
+    // Update local map and redraw
+    if (parsed.meta && parsed.roads) {
+      MAP.world = parsed.meta.world || MAP.world;
+      MAP.roads = parsed.roads || [];
+    }
+    resize();
+
+    // Upload to viz-gateway (saves to /maps/ and notifies ats-env)
+    setStatus('Uploading map to simulator…', 'uploading');
+    try {
+      const res = await fetch('http://localhost:8090/map', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Map-Filename': file.name,
+        },
+        body: text,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStatus(`Map sent (${parsed.roads ? parsed.roads.length : '?'} roads) — waiting for vehicles…`, 'connected');
+      } else {
+        setStatus('Map drawn locally but upload failed', 'error');
+      }
+    } catch {
+      setStatus('Map drawn locally — could not reach viz-gateway (start docker compose)', 'error');
+    }
+
+    e.target.value = '';
+  });
+
+  function setStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className = cls || '';
+  }
+
+  // ─── WebSocket ────────────────────────────────────────────────────────────────
+  let lastSnapshot = null;
+  let lastMsgTime = 0;
+  let fps = 0;
+
+  setInterval(() => {
+    statsEl.textContent = `${fps.toFixed(0)} fps | ${lastSnapshot?.vehicles?.length ?? 0} vehicles`;
+  }, 500);
+
+  function connect_ws() {
+    const ws = new WebSocket('ws://localhost:8090');
+
+    ws.onopen = () => setStatus('WebSocket connected', 'connected');
+
+    ws.onmessage = (evt) => {
+      try {
+        const snapshot = JSON.parse(evt.data);
+        lastSnapshot = snapshot;
+        const now = performance.now();
+        if (lastMsgTime > 0) fps = 1000 / (now - lastMsgTime);
+        lastMsgTime = now;
+        render(snapshot);
+      } catch (_) {}
+    };
+
+    ws.onclose = () => {
+      setStatus('Disconnected — retrying…', 'error');
+      setTimeout(connect_ws, 2000);
+    };
+
+    ws.onerror = () => setStatus('Connection error', 'error');
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────────────────────
+  resize();
+  connect_ws();
+  </script>
+</body>
+</html>

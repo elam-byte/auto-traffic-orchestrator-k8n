@@ -1,0 +1,11 @@
+{
+  "_comment": "sim.vehicles — published by ats-env once after each map load. vehicle-orchestrator receives this and creates/removes one container per vehicle.",
+  "_subject": "sim.vehicles",
+  "_publisher": "ats-env",
+  "_subscriber": "vehicle-orchestrator",
+
+  "vehicles": [
+    { "id": "v-1", "color": "#3b82f6", "length": 4.5, "width": 2.0 },
+    { "id": "v-2", "color": "#ef4444", "length": 4.5, "width": 2.0 }
+  ]
+}

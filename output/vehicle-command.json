@@ -1,0 +1,13 @@
+{
+  "_comment": "VehicleCommand — published by vehicle-agent on subject: sim.cmd.{vehicle_id}",
+  "t": 1711886400050,
+  "id": "v-1",
+  "desired_accel": 0.64,
+  "desired_steer": 0.0,
+
+  "_junction_note": "junction_choice is only present when the agent wants to confirm or change a lane choice at a fork. ats-env stores the choice and routes the corridor accordingly.",
+  "junction_choice": {
+    "at_edge": "r-1:right",
+    "choice":  "r-6:right"
+  }
+}

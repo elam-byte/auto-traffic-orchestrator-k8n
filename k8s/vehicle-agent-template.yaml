@@ -1,0 +1,43 @@
+# Template: single vehicle-agent Deployment (for reference or manual apply)
+# The vehicle-orchestrator generates these automatically from the loaded map.
+# Replace {VEHICLE_ID} with the actual vehicle ID (e.g. v-1, v-2).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vehicle-{VEHICLE_ID}
+  namespace: ats
+  labels:
+    app: vehicle-agent
+    vehicle-id: "{VEHICLE_ID}"
+    managed-by: vehicle-orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vehicle-agent
+      vehicle-id: "{VEHICLE_ID}"
+  template:
+    metadata:
+      labels:
+        app: vehicle-agent
+        vehicle-id: "{VEHICLE_ID}"
+    spec:
+      containers:
+        - name: vehicle-agent
+          image: vehicle-agent:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: VEHICLE_ID
+              value: "{VEHICLE_ID}"
+            - name: NATS_URL
+              value: nats://nats.ats.svc.cluster.local:4222
+            - name: TARGET_SPEED
+              value: "8.0"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      restartPolicy: Always

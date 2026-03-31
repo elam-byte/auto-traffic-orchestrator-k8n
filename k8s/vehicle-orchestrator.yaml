@@ -1,0 +1,69 @@
+---
+# ServiceAccount + RBAC: the orchestrator needs to create/delete Deployments
+# in the ats namespace
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vehicle-orchestrator
+  namespace: ats
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vehicle-orchestrator
+  namespace: ats
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "delete", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vehicle-orchestrator
+  namespace: ats
+subjects:
+  - kind: ServiceAccount
+    name: vehicle-orchestrator
+    namespace: ats
+roleRef:
+  kind: Role
+  name: vehicle-orchestrator
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vehicle-orchestrator
+  namespace: ats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vehicle-orchestrator
+  template:
+    metadata:
+      labels:
+        app: vehicle-orchestrator
+    spec:
+      serviceAccountName: vehicle-orchestrator
+      containers:
+        - name: vehicle-orchestrator
+          image: vehicle-orchestrator:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NATS_URL
+              value: nats://nats.ats.svc.cluster.local:4222
+            - name: ORCHESTRATION_MODE
+              value: kubernetes
+            - name: VEHICLE_IMAGE
+              value: vehicle-agent:latest
+            - name: VEHICLE_NAMESPACE
+              value: ats
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

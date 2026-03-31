@@ -1,0 +1,13 @@
+{
+  "name": "ats-root",
+  "private": true,
+  "scripts": {
+    "dev:env":     "pnpm --filter ats-env dev",
+    "dev:gateway": "node viz-gateway/viz-gateway.js",
+    "dev:viewer":  "pnpm --filter viewer dev",
+    "build:viewer": "pnpm --filter viewer build"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
