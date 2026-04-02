@@ -30,3 +30,6 @@ output/ats-env-observations-captured.json
 output/ats-env-snapshots-captured.json
 output/ats-env-commands-sent.json
 output/viz-gateway-capture.json
+
+#datafile
+data/
