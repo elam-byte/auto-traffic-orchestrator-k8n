@@ -1,0 +1,4 @@
+{"lane_id":"r-5:left","avg_speed_ms":2.787226594271334,"avg_speed_limit_ms":5.555555555555547,"sample_count":72,"congestion_score":0.4982992130311592,"window_start":"2026-04-02T07:28:30.000+02:00","window_end":"2026-04-02T07:28:40.000+02:00"}
+{"lane_id":"r-3:left","avg_speed_ms":5.153435216098545,"avg_speed_limit_ms":5.555555555555546,"sample_count":224,"congestion_score":0.07238166110226019,"window_start":"2026-04-02T07:28:30.000+02:00","window_end":"2026-04-02T07:28:40.000+02:00"}
+{"lane_id":"r-3:right","avg_speed_ms":4.6379119574336976,"avg_speed_limit_ms":5.555555555555549,"sample_count":376,"congestion_score":0.1651758476619335,"window_start":"2026-04-02T07:28:30.000+02:00","window_end":"2026-04-02T07:28:40.000+02:00"}
+{"lane_id":"r-11:right","avg_speed_ms":2.666355033723667,"avg_speed_limit_ms":2.777777777777778,"sample_count":24,"congestion_score":0.04011218785948012,"window_start":"2026-04-02T07:28:30.000+02:00","window_end":"2026-04-02T07:28:40.000+02:00"}

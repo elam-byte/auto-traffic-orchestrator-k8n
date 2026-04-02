@@ -1,0 +1,21 @@
+# Core analytics
+pyspark>=3.5.0
+pyarrow>=14.0.0
+pandas>=2.2.0
+
+# NATS messaging
+nats-py>=2.9.0
+
+# Kafka bridge
+kafka-python>=2.0.2
+
+# Dashboard server
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+sse-starlette>=1.8.2
+
+# Data models
+pydantic>=2.6.0
+
+# Utilities
+python-dotenv>=1.0.0

@@ -1,0 +1,2 @@
+{"lane_id":"r-8:left","avg_speed_ms":4.043325818116282,"avg_speed_limit_ms":5.5555555555555465,"sample_count":188,"congestion_score":0.2722013527390681,"window_start":"2026-04-02T07:29:45.000+02:00","window_end":"2026-04-02T07:29:55.000+02:00"}
+{"lane_id":"r-8:right","avg_speed_ms":3.436310682246235,"avg_speed_limit_ms":5.555555555555548,"sample_count":129,"congestion_score":0.3814640771956769,"window_start":"2026-04-02T07:29:45.000+02:00","window_end":"2026-04-02T07:29:55.000+02:00"}

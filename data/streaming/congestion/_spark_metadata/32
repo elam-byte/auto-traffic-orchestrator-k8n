@@ -1,0 +1,4 @@
+v1
+{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/congestion/part-00000-fd07ef76-9930-43bb-aed9-8c8ef537f39d-c000.json","size":732,"isDir":false,"modificationTime":1775107701324,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/congestion/part-00001-a6fcf5ac-82c0-42fb-8003-1325368eb68a-c000.json","size":247,"isDir":false,"modificationTime":1775107701335,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/congestion/part-00002-7083bf06-a777-4aa4-b168-70a0afa6f3ff-c000.json","size":246,"isDir":false,"modificationTime":1775107701341,"blockReplication":1,"blockSize":33554432,"action":"add"}

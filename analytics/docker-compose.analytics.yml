@@ -1,0 +1,63 @@
+# Analytics infrastructure for ATS PySpark extensions.
+# Run alongside the main stack:
+#   docker compose -f analytics/docker-compose.analytics.yml up -d
+#
+# Kafka runs in KRaft mode (no Zookeeper required).
+# Spark runs in standalone cluster mode (master + one worker).
+
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: ats-kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      # KRaft (no Zookeeper) — apache/kafka image uses KAFKA_ prefix
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+
+  spark-master:
+    image: apache/spark:3.5.5-python3
+    container_name: ats-spark-master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master"]
+    ports:
+      - "8085:8080"   # Spark Web UI (8085 to avoid conflict with other services)
+      - "7077:7077"   # Spark master RPC
+    environment:
+      SPARK_MASTER_HOST: "0.0.0.0"
+    volumes:
+      - ./..:/opt/ats:ro
+
+  spark-worker:
+    image: apache/spark:3.5.5-python3
+    container_name: ats-spark-worker
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    environment:
+      SPARK_WORKER_MEMORY: "2g"
+      SPARK_WORKER_CORES: "2"
+    depends_on:
+      - spark-master
+    volumes:
+      - ./..:/opt/ats:ro
+
+volumes:
+  kafka_data:
+    driver: local

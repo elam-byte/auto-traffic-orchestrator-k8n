@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATS ANALYTICS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #111;
+      --surface:  #1a1a1a;
+      --border:   #333;
+      --text:     #eee;
+      --muted:    #888;
+      --dim:      #555;
+      --cyan:     #00e5ff;
+      --green:    #76ff03;
+      --orange:   #ff6d00;
+      --magenta:  #ea00d9;
+      --yellow:   #ffe57a;
+      --red:      #ff1744;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    #header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      height: 42px;
+      flex-shrink: 0;
+    }
+    #header h1 {
+      font-size: 14px;
+      font-weight: normal;
+      letter-spacing: 2px;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+    #header h1 span { color: var(--cyan); }
+
+    /* ── Tab bar ─────────────────────────────────────────────── */
+    #tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: var(--muted); }
+    .tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ───────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px;
+    }
+    .card-label {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: var(--dim);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    /* ── Grid layouts ────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .grid-3-1 { display: grid; grid-template-columns: 3fr 1fr; gap: 12px; }
+    .gap { margin-bottom: 12px; }
+
+    /* ── Chart containers ────────────────────────────────────── */
+    .chart-wrap { position: relative; height: 260px; width: 100%; }
+    .chart-wrap canvas { max-height: 260px; }
+
+    /* ── Stat boxes ──────────────────────────────────────────── */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-box {
+      background: #141414;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 22px;
+      color: var(--cyan);
+      letter-spacing: 1px;
+      line-height: 1.2;
+    }
+    .stat-label {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 1.2px;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    /* ── Live status ─────────────────────────────────────────── */
+    #live-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+    #status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    #status-dot.live { background: var(--green); animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    #status-text { font-size: 10px; letter-spacing: 1.5px; color: var(--dim); }
+    #status-text.live { color: var(--green); }
+
+    /* ── Density canvas ──────────────────────────────────────── */
+    #density-canvas {
+      width: 100%;
+      height: 200px;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* ── KPI strip ───────────────────────────────────────────── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .kpi-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px;
+      text-align: center;
+    }
+    .kpi-value {
+      font-size: 26px;
+      color: var(--cyan);
+      letter-spacing: 1px;
+    }
+    .kpi-label {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 1.5px;
+      margin-top: 5px;
+      text-transform: uppercase;
+    }
+
+    /* ── Run selector ────────────────────────────────────────── */
+    .run-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .run-selector label { font-size: 10px; color: var(--dim); letter-spacing: 1px; }
+    .run-selector select {
+      background: #0e0e0e;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+    .run-selector select:focus { border-color: var(--cyan); }
+    .btn {
+      background: #1e1e1e;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 5px 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .btn:active { background: #252525; }
+
+    /* ── Table ───────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .data-table th {
+      background: #141414;
+      color: var(--dim);
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+    .data-table th:hover { color: var(--muted); }
+    .data-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #222;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .data-table tr:hover td { background: #222; }
+    .data-table .empty-row td {
+      text-align: center;
+      color: var(--dim);
+      padding: 20px;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    /* ── Scenario type buttons ───────────────────────────────── */
+    .type-btns {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .type-btn {
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 6px 14px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .type-btn:hover { border-color: var(--muted); color: var(--muted); }
+    .type-btn.active { border-color: var(--cyan); color: var(--cyan); }
+
+    /* ── Heatmap ─────────────────────────────────────────────── */
+    #heatmap-wrap {
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+    #heatmap-canvas { display: block; }
+
+    /* ── Status badge ────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      padding: 3px 8px;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+    .badge.ready { background: rgba(118,255,3,0.15); color: var(--green); border: 1px solid var(--green); }
+    .badge.not-ready { background: rgba(255,23,68,0.1); color: #ff6e6e; border: 1px solid #ff1744; }
+
+    /* ── Loading / error ─────────────────────────────────────── */
+    .loading { color: var(--dim); font-size: 11px; letter-spacing: 1px; padding: 8px 0; }
+    .error-msg { color: #ff6e6e; font-size: 11px; padding: 8px 0; }
+
+    /* ── Scrollbar ───────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+    /* ── Pipeline meta ───────────────────────────────────────── */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .meta-item {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .meta-item span { color: var(--text); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <div id="header">
+    <h1>ATS <span>ANALYTICS</span></h1>
+    <div id="live-status">
+      <div id="status-dot"></div>
+      <span id="status-text">OFFLINE</span>
+    </div>
+  </div>
+
+  <!-- ── Tab bar ─────────────────────────────────────────────── -->
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="realtime">REAL-TIME</button>
+    <button class="tab-btn" data-tab="historical">HISTORICAL</button>
+    <button class="tab-btn" data-tab="ml">ML PIPELINE</button>
+    <button class="tab-btn" data-tab="scenarios">SCENARIOS</button>
+  </div>
+
+  <!-- ── Content ─────────────────────────────────────────────── -->
+  <div id="content">
+
+    <!-- ══════════════════════════════════════════════════════════
+         TAB 1 — REAL-TIME
+    ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-panel active" id="panel-realtime">
+      <div class="grid-2 gap">
+        <!-- Congestion -->
+        <div class="card">
+          <div class="card-label">Congestion Score Per Lane Edge</div>
+          <div class="chart-wrap"><canvas id="chart-congestion"></canvas></div>
+        </div>
+        <!-- Throughput -->
+        <div class="card">
+          <div class="card-label">Junction Throughput (vehicles/min)</div>
+          <div class="chart-wrap"><canvas id="chart-throughput"></canvas></div>
+        </div>
+      </div>
+      <div class="grid-3-1">
+        <!-- Density heatmap -->
+        <div class="card">
+          <div class="card-label">Vehicle Density Grid (500m × 281m world)</div>
+          <canvas id="density-canvas"></canvas>
+        </div>
+        <!-- Stats -->
+        <div class="card">
+          <div class="card-label">Live Stats</div>
+          <div class="stat-grid">
+            <div class="stat-box">
+              <div class="stat-value" id="stat-snapshots">—</div>
+              <div class="stat-label">Total Snapshots</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-avg-cong">—</div>
+              <div class="stat-label">Avg Congestion</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-max-tput">—</div>
+              <div class="stat-label">Max Throughput</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-active-lanes">—</div>
+              <div class="stat-label">Active Lanes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         TAB 2 — HISTORICAL
+    ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="panel-historical">
+      <div class="run-selector">
+        <label>RUN:</label>
+        <select id="run-select"><option value="">loading…</option></select>
+        <button class="btn" id="load-btn">Load Results</button>
+      </div>
+
+      <!-- Row 1: Lateral deviation -->
+      <div class="grid-2 gap">
+        <div class="card">
+          <div class="card-label">Lateral Deviation by Road (p50 / p95 / p99)</div>
+          <div class="chart-wrap"><canvas id="chart-lat-road"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Lateral Deviation by Vehicle (p95)</div>
+          <div class="chart-wrap"><canvas id="chart-lat-vehicle"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Row 2: Speed profile + Junction slowdown -->
+      <div class="grid-2 gap">
+        <div class="card">
+          <div class="card-label">Speed Profile (avg speed vs speed limit)</div>
+          <div class="chart-wrap"><canvas id="chart-speed"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Junction Slowdown Ranking</div>
+          <div class="chart-wrap"><canvas id="chart-junction"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Row 3: Dead-end incidents -->
+      <div class="card">
+        <div class="card-label">Dead-End Incidents</div>
+        <div id="dead-end-wrap">
+          <div class="loading">…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         TAB 3 — ML PIPELINE
+    ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="panel-ml">
+      <!-- KPI row -->
+      <div class="kpi-strip" id="ml-kpis">
+        <div class="kpi-box"><div class="kpi-value" id="kpi-total">—</div><div class="kpi-label">Total Rows</div></div>
+        <div class="kpi-box"><div class="kpi-value" id="kpi-train">—</div><div class="kpi-label">Train Rows</div></div>
+        <div class="kpi-box"><div class="kpi-value" id="kpi-val">—</div><div class="kpi-label">Val Rows</div></div>
+        <div class="kpi-box"><div class="kpi-value" id="kpi-test">—</div><div class="kpi-label">Test Rows</div></div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid-2 gap">
+        <div class="card">
+          <div class="card-label">Label Distribution</div>
+          <div style="position:relative; height:260px; display:flex; align-items:center; justify-content:center;">
+            <canvas id="chart-label-dist"></canvas>
+            <div id="donut-center" style="position:absolute; text-align:center; pointer-events:none;">
+              <div style="font-size:22px; color:var(--cyan);" id="donut-pct">—</div>
+              <div style="font-size:9px; color:var(--dim); letter-spacing:1px;">POSITIVE</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Feature Statistics (mean / p95)</div>
+          <div class="chart-wrap"><canvas id="chart-features"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Road distribution -->
+      <div class="card gap">
+        <div class="card-label">Dataset Balance by Road ID</div>
+        <div class="chart-wrap"><canvas id="chart-road-dist"></canvas></div>
+      </div>
+
+      <!-- Status -->
+      <div class="card">
+        <div class="card-label">Pipeline Status</div>
+        <div id="ml-status-wrap">
+          <div class="loading">…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         TAB 4 — SCENARIOS
+    ═══════════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="panel-scenarios">
+      <div class="type-btns" id="type-btns">
+        <button class="type-btn active" data-type="hyperparameter_sweep">hyperparameter_sweep</button>
+        <button class="type-btn" data-type="density_stress">density_stress</button>
+        <button class="type-btn" data-type="ab_comparison">ab_comparison</button>
+        <button class="type-btn" data-type="map_robustness">map_robustness</button>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi-box"><div class="kpi-value" id="sc-total">—</div><div class="kpi-label">Total Scenarios</div></div>
+        <div class="kpi-box"><div class="kpi-value" id="sc-best">—</div><div class="kpi-label">Best p95 Lateral (m)</div></div>
+        <div class="kpi-box"><div class="kpi-value" id="sc-worst">—</div><div class="kpi-label">Worst p95 Lateral (m)</div></div>
+        <div class="kpi-box"><div class="kpi-value" id="sc-dur">—</div><div class="kpi-label">Avg Duration (s)</div></div>
+      </div>
+
+      <div class="grid-2 gap">
+        <div class="card">
+          <div class="card-label">Scenario Results</div>
+          <div id="scenario-table-wrap"><div class="loading">…</div></div>
+        </div>
+        <div class="card">
+          <div class="card-label">P95 Lateral Deviation by Scenario</div>
+          <div class="chart-wrap"><canvas id="chart-scenario-p95"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Hyperparameter heatmap -->
+      <div class="card" id="heatmap-card" style="display:none;">
+        <div class="card-label">Hyperparameter Heatmap (K_LATERAL × PREBRAKE_HORIZON → p95 Lateral)</div>
+        <div id="heatmap-wrap">
+          <canvas id="heatmap-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- #content -->
+</div><!-- #app -->
+
+<script>
+'use strict';
+
+// ── Global Chart.js defaults ───────────────────────────────────────────────
+Chart.defaults.color        = '#888';
+Chart.defaults.borderColor  = '#2a2a2a';
+Chart.defaults.font.family  = "'Courier New', Courier, monospace";
+Chart.defaults.font.size    = 11;
+
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  snapshots:    0,
+  congestion:   [],
+  throughput:   [],
+  density:      [],
+  sseActive:    false,
+  charts:       {},
+  tabInited:    {},
+  currentRun:   null,
+  scenarioType: 'hyperparameter_sweep',
+  sortCol:      null,
+  sortAsc:      true,
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const fmt  = n => (n == null || isNaN(n)) ? '—' : Number(n).toFixed(3);
+const fmtI = n => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString();
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+function destroyChart(key) {
+  if (state.charts[key]) {
+    state.charts[key].destroy();
+    delete state.charts[key];
+  }
+}
+
+function makeChart(key, ctx, cfg) {
+  destroyChart(key);
+  state.charts[key] = new Chart(ctx, cfg);
+  return state.charts[key];
+}
+
+function congestionColor(score) {
+  if (score < 0.3) return '#76ff03';
+  if (score < 0.6) return '#ffe57a';
+  if (score < 0.8) return '#ff6d00';
+  return '#ff1744';
+}
+
+// ── Tab routing ────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById(`panel-${tab}`).classList.add('active');
+    if (!state.tabInited[tab]) {
+      state.tabInited[tab] = true;
+      initTab(tab);
+    }
+  });
+});
+
+function initTab(tab) {
+  if (tab === 'realtime')   initRealtime();
+  if (tab === 'historical') initHistorical();
+  if (tab === 'ml')         initML();
+  if (tab === 'scenarios')  initScenarios();
+}
+
+// ── ══════════════════════════════════════════════════════════════
+//    TAB 1 — REAL-TIME
+// ══════════════════════════════════════════════════════════════ ─
+let _realtimeInited = false;
+function initRealtime() {
+  if (_realtimeInited) return;
+  _realtimeInited = true;
+  buildCongestionChart();
+  buildThroughputChart();
+  initDensityCanvas();
+  connectSSE();
+}
+
+// Auto-init tab 1 since it's the default
+state.tabInited['realtime'] = true;
+window.addEventListener('load', initRealtime);
+
+function buildCongestionChart() {
+  const ctx = document.getElementById('chart-congestion').getContext('2d');
+  state.charts['congestion'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: [], datasets: [{ label: 'Congestion Score', data: [], backgroundColor: [] }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: {
+          min: 0, max: 1,
+          grid: { color: '#2a2a2a' },
+          ticks: { color: '#555' },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#888', font: { size: 10 } },
+        }
+      },
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ` ${fmt(ctx.raw)}` }
+      }}
+    }
+  });
+}
+
+function buildThroughputChart() {
+  const ctx = document.getElementById('chart-throughput').getContext('2d');
+  state.charts['throughput'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: [], datasets: [{ label: 'vehicles/min', data: [], backgroundColor: '#00e5ff', borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#888', font: { size: 10 } } },
+        y: { grid: { color: '#2a2a2a' }, ticks: { color: '#555' } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// ── Density canvas ─────────────────────────────────────────────
+const GRID_COLS = 50, GRID_ROWS = 28;
+let densityOffscreen = null;
+
+function initDensityCanvas() {
+  const c = document.getElementById('density-canvas');
+  c.width  = GRID_COLS;
+  c.height = GRID_ROWS;
+  drawDensity([]);
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function densityCellColor(count, maxCount) {
+  if (!maxCount) return '#111';
+  const t = clamp(count / maxCount, 0, 1);
+  // #111 → #ea00d9 (magenta)
+  const r = Math.round(lerp(0x11, 0xea, t));
+  const g = Math.round(lerp(0x11, 0x00, t));
+  const b = Math.round(lerp(0x11, 0xd9, t));
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawDensity(rows) {
+  const c = document.getElementById('density-canvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  const grid = {};
+  let maxCount = 0;
+  rows.forEach(r => {
+    const key = `${r.grid_col},${r.grid_row}`;
+    grid[key] = (grid[key] || 0) + (r.vehicle_count || 0);
+    if (grid[key] > maxCount) maxCount = grid[key];
+  });
+
+  for (let col = 0; col < GRID_COLS; col++) {
+    for (let row = 0; row < GRID_ROWS; row++) {
+      const count = grid[`${col},${row}`] || 0;
+      ctx.fillStyle = densityCellColor(count, maxCount);
+      ctx.fillRect(col, row, 1, 1);
+    }
+  }
+
+  // Grid lines
+  ctx.strokeStyle = '#1a1a1a';
+  ctx.lineWidth = 0.1;
+  for (let i = 0; i <= GRID_COLS; i++) {
+    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, GRID_ROWS); ctx.stroke();
+  }
+  for (let j = 0; j <= GRID_ROWS; j++) {
+    ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(GRID_COLS, j); ctx.stroke();
+  }
+}
+
+// ── SSE ────────────────────────────────────────────────────────
+function setStatus(live) {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  if (live) {
+    dot.classList.add('live');
+    text.classList.add('live');
+    text.textContent = 'LIVE';
+  } else {
+    dot.classList.remove('live');
+    text.classList.remove('live');
+    text.textContent = 'OFFLINE';
+  }
+}
+
+function connectSSE() {
+  let es;
+  function connect() {
+    es = new EventSource('/api/ext1/stream');
+    es.onopen = () => setStatus(true);
+    es.onmessage = e => {
+      try {
+        const d = JSON.parse(e.data);
+        updateRealtime(d);
+      } catch {}
+    };
+    es.onerror = () => {
+      setStatus(false);
+      es.close();
+      setTimeout(connect, 5000);
+    };
+  }
+  connect();
+}
+
+function updateRealtime(data) {
+  state.snapshots++;
+
+  // Congestion
+  const cong = data.congestion || [];
+  if (cong.length) {
+    const labels = cong.map(r => r.lane_id || '?');
+    const values = cong.map(r => r.congestion_score || 0);
+    const colors = values.map(congestionColor);
+    const ch = state.charts['congestion'];
+    if (ch) {
+      ch.data.labels = labels;
+      ch.data.datasets[0].data = values;
+      ch.data.datasets[0].backgroundColor = colors;
+      ch.update('none');
+    }
+    const avgCong = values.reduce((a, b) => a + b, 0) / values.length;
+    document.getElementById('stat-avg-cong').textContent   = avgCong.toFixed(2);
+    document.getElementById('stat-active-lanes').textContent = values.filter(v => v > 0).length;
+  }
+
+  // Throughput
+  const tput = data.throughput || [];
+  if (tput.length) {
+    const labels = tput.map(r => r.junction_edge || '?');
+    const values = tput.map(r => r.vehicles_per_min || 0);
+    const ch = state.charts['throughput'];
+    if (ch) {
+      ch.data.labels = labels;
+      ch.data.datasets[0].data = values;
+      ch.update('none');
+    }
+    const maxT = Math.max(...values);
+    document.getElementById('stat-max-tput').textContent = maxT.toFixed(1);
+  }
+
+  // Density
+  drawDensity(data.density || []);
+
+  // Snapshots counter
+  document.getElementById('stat-snapshots').textContent = fmtI(state.snapshots);
+}
+
+// ── ══════════════════════════════════════════════════════════════
+//    TAB 2 — HISTORICAL
+// ══════════════════════════════════════════════════════════════ ─
+function initHistorical() {
+  // Load run list
+  fetch('/api/ext2/runs').then(r => r.json()).then(runs => {
+    const sel = document.getElementById('run-select');
+    sel.innerHTML = runs.length
+      ? runs.map(r => `<option value="${r}">${r}</option>`).join('')
+      : '<option value="">no runs found</option>';
+    if (runs.length) state.currentRun = runs[0];
+  }).catch(() => {});
+
+  document.getElementById('load-btn').addEventListener('click', () => {
+    const run = document.getElementById('run-select').value;
+    if (run) loadHistoricalData(run);
+  });
+}
+
+function loadHistoricalData(runId) {
+  state.currentRun = runId;
+  loadLateralDeviation(runId);
+  loadSpeedProfile(runId);
+  loadJunctionSlowdown(runId);
+  loadDeadEnds(runId);
+}
+
+function loadLateralDeviation(runId) {
+  fetch(`/api/ext2/lateral_deviation?run_id=${runId}`).then(r => r.json()).then(data => {
+    // Per road chart
+    const ctx1 = document.getElementById('chart-lat-road').getContext('2d');
+    makeChart('lat-road', ctx1, {
+      type: 'bar',
+      data: {
+        labels: data.map(r => r.road_id || '?'),
+        datasets: [
+          { label: 'p50', data: data.map(r => r.p50_m), backgroundColor: '#00e5ff', borderWidth: 0 },
+          { label: 'p95', data: data.map(r => r.p95_m), backgroundColor: '#ff6d00', borderWidth: 0 },
+          { label: 'p99', data: data.map(r => r.p99_m), backgroundColor: '#ea00d9', borderWidth: 0 },
+        ]
+      },
+      options: histChartOpts('Lateral Deviation (m)')
+    });
+
+    // Per vehicle chart (using per_vehicle endpoint if available, else reuse data)
+    fetch(`/api/ext2/lateral_deviation?run_id=${runId}`).then(r => r.json()).then(vdata => {
+      const sorted = [...vdata].sort((a, b) => (b.p95_m || 0) - (a.p95_m || 0));
+      const ctx2 = document.getElementById('chart-lat-vehicle').getContext('2d');
+      makeChart('lat-vehicle', ctx2, {
+        type: 'bar',
+        data: {
+          labels: sorted.map(r => r.road_id || '?'),
+          datasets: [{ label: 'p95', data: sorted.map(r => r.p95_m), backgroundColor: '#00e5ff', borderWidth: 0 }]
+        },
+        options: histChartOpts('p95 Lateral (m)')
+      });
+    });
+  }).catch(e => console.warn('lateral_deviation:', e));
+}
+
+function loadSpeedProfile(runId) {
+  fetch(`/api/ext2/speed_profile?run_id=${runId}`).then(r => r.json()).then(data => {
+    const ctx = document.getElementById('chart-speed').getContext('2d');
+    const sorted = [...data].sort((a, b) => a.pos_bin_m - b.pos_bin_m);
+    makeChart('speed-profile', ctx, {
+      type: 'line',
+      data: {
+        labels: sorted.map(r => r.pos_bin_m + 'm'),
+        datasets: [
+          {
+            label: 'Avg Speed (m/s)',
+            data: sorted.map(r => r.avg_speed_ms),
+            borderColor: '#76ff03', backgroundColor: 'transparent',
+            borderWidth: 2, pointRadius: 0, tension: 0.3,
+          },
+          {
+            label: 'Speed Limit (m/s)',
+            data: sorted.map(r => r.avg_speed_limit_ms),
+            borderColor: '#ff6d00', borderDash: [4, 3], backgroundColor: 'transparent',
+            borderWidth: 1.5, pointRadius: 0, tension: 0.3,
+          }
+        ]
+      },
+      options: histChartOpts('m/s')
+    });
+  }).catch(e => console.warn('speed_profile:', e));
+}
+
+function loadJunctionSlowdown(runId) {
+  fetch(`/api/ext2/junction_slowdown?run_id=${runId}`).then(r => r.json()).then(data => {
+    const ctx = document.getElementById('chart-junction').getContext('2d');
+    makeChart('junction-slowdown', ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(r => r.junction_edge || '?'),
+        datasets: [{
+          label: 'Avg Slowdown (m/s)',
+          data: data.map(r => r.avg_slowdown_ms),
+          backgroundColor: '#ff1744', borderWidth: 0
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { grid: { color: '#2a2a2a' }, ticks: { color: '#555' } },
+          y: { grid: { display: false }, ticks: { color: '#888', font: { size: 10 } } }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }).catch(e => console.warn('junction_slowdown:', e));
+}
+
+function loadDeadEnds(runId) {
+  fetch(`/api/ext2/dead_ends?run_id=${runId}`).then(r => r.json()).then(data => {
+    const wrap = document.getElementById('dead-end-wrap');
+    const rows = data.per_vehicle || [];
+    if (!rows.length) {
+      wrap.innerHTML = '<table class="data-table"><tbody><tr class="empty-row"><td colspan="4">No dead-end incidents recorded</td></tr></tbody></table>';
+      return;
+    }
+    wrap.innerHTML = `<table class="data-table">
+      <thead><tr>
+        <th>VEHICLE ID</th><th>INCIDENTS</th><th>FIRST (ms)</th><th>LAST (ms)</th>
+      </tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>${r.vehicle_id}</td>
+        <td style="color:var(--red)">${r.incident_count}</td>
+        <td>${fmtI(r.first_incident_t)}</td>
+        <td>${fmtI(r.last_incident_t)}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }).catch(() => {
+    document.getElementById('dead-end-wrap').innerHTML = '<div class="error-msg">failed to load data</div>';
+  });
+}
+
+function histChartOpts(yLabel) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#888', font: { size: 10 } } },
+      y: { grid: { color: '#2a2a2a' }, ticks: { color: '#555' }, title: { display: true, text: yLabel, color: '#555', font: { size: 10 } } }
+    },
+    plugins: {
+      legend: { labels: { color: '#888', boxWidth: 10, font: { size: 10 } } }
+    }
+  };
+}
+
+// ── ══════════════════════════════════════════════════════════════
+//    TAB 3 — ML PIPELINE
+// ══════════════════════════════════════════════════════════════ ─
+function initML() {
+  fetch('/api/ext3/quality').then(r => r.json()).then(q => {
+    if (q.error) {
+      document.getElementById('kpi-total').textContent = '—';
+      renderMLStatus(null);
+      return;
+    }
+    document.getElementById('kpi-total').textContent = fmtI(q.total_rows);
+    document.getElementById('kpi-train').textContent = fmtI(q.train_rows);
+    document.getElementById('kpi-val').textContent   = fmtI(q.val_rows);
+    document.getElementById('kpi-test').textContent  = fmtI(q.test_rows);
+    renderMLStatus(q);
+  }).catch(() => renderMLStatus(null));
+
+  fetch('/api/ext3/features').then(r => r.json()).then(data => {
+    if (data.error) return;
+    buildLabelChart(data.label_dist || []);
+    buildFeatureChart(data.feature_stats || []);
+    buildRoadDistChart(data.road_dist || []);
+  }).catch(() => {});
+}
+
+function buildLabelChart(labelDist) {
+  const ctx = document.getElementById('chart-label-dist').getContext('2d');
+  const good = labelDist.find(r => r.label && r.label.includes('good'));
+  const bad  = labelDist.find(r => r.label && r.label.includes('bad'));
+  const total = ((good && good.count) || 0) + ((bad && bad.count) || 0);
+  const posRatio = total ? ((good && good.count) || 0) / total * 100 : 0;
+  document.getElementById('donut-pct').textContent = posRatio.toFixed(1) + '%';
+
+  makeChart('label-dist', ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['good (1)', 'bad (0)'],
+      datasets: [{
+        data: [(good && good.count) || 0, (bad && bad.count) || 0],
+        backgroundColor: ['#76ff03', '#ff1744'],
+        borderWidth: 0,
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: false, maintainAspectRatio: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#888', boxWidth: 10 } }
+      }
+    }
+  });
+}
+
+function buildFeatureChart(stats) {
+  const ctx = document.getElementById('chart-features').getContext('2d');
+  makeChart('features', ctx, {
+    type: 'bar',
+    data: {
+      labels: stats.map(r => r.feature),
+      datasets: [
+        { label: 'mean', data: stats.map(r => r.mean), backgroundColor: '#00e5ff', borderWidth: 0 },
+        { label: 'p95',  data: stats.map(r => r.p95),  backgroundColor: '#ff6d00', borderWidth: 0 },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#555' } },
+        y: { grid: { display: false }, ticks: { color: '#888', font: { size: 10 } } }
+      },
+      plugins: { legend: { labels: { color: '#888', boxWidth: 10 } } }
+    }
+  });
+}
+
+function buildRoadDistChart(roadDist) {
+  const ctx = document.getElementById('chart-road-dist').getContext('2d');
+  makeChart('road-dist', ctx, {
+    type: 'bar',
+    data: {
+      labels: roadDist.map(r => r.road_id || '?'),
+      datasets: [{ label: 'samples', data: roadDist.map(r => r.count), backgroundColor: '#ea00d9', borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#888', font: { size: 10 } } },
+        y: { grid: { color: '#2a2a2a' }, ticks: { color: '#555' } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function renderMLStatus(q) {
+  const wrap = document.getElementById('ml-status-wrap');
+  if (!q) {
+    wrap.innerHTML = `<span class="badge not-ready">NOT YET BUILT</span>
+      <div style="color:var(--dim);font-size:11px;margin-top:8px;letter-spacing:0.5px;">
+        Run: python analytics/ext3_ml_pipeline/run_pipeline.py --runs data/runs/ --output data/ml_dataset/
+      </div>`;
+    return;
+  }
+  wrap.innerHTML = `<span class="badge ready">READY</span>
+    <div class="meta-grid" style="margin-top:10px;">
+      <div class="meta-item">LABEL <span>${q.label || '—'}</span></div>
+      <div class="meta-item">POS RATIO <span>${q.positive_label_ratio ? (q.positive_label_ratio * 100).toFixed(1) + '%' : '—'}</span></div>
+      <div class="meta-item">FEATURES <span>${(q.features || []).length}</span></div>
+    </div>`;
+}
+
+// ── ══════════════════════════════════════════════════════════════
+//    TAB 4 — SCENARIOS
+// ══════════════════════════════════════════════════════════════ ─
+function initScenarios() {
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.scenarioType = btn.dataset.type;
+      loadScenarioData(state.scenarioType);
+    });
+  });
+  loadScenarioData(state.scenarioType);
+}
+
+function loadScenarioData(type) {
+  // Show/hide heatmap card
+  const hm = document.getElementById('heatmap-card');
+  hm.style.display = type === 'hyperparameter_sweep' ? 'block' : 'none';
+
+  Promise.all([
+    fetch(`/api/ext4/results?scenario_type=${type}`).then(r => r.json()),
+    fetch(`/api/ext4/summary?scenario_type=${type}`).then(r => r.json()),
+  ]).then(([results, summary]) => {
+    // KPIs
+    document.getElementById('sc-total').textContent = fmtI(results.length);
+    if (summary.length) {
+      const p95s = summary.map(r => r.p95_lateral_m).filter(v => v != null && !isNaN(v));
+      if (p95s.length) {
+        document.getElementById('sc-best').textContent  = Math.min(...p95s).toFixed(4);
+        document.getElementById('sc-worst').textContent = Math.max(...p95s).toFixed(4);
+      }
+    }
+    const durs = results.map(r => r.duration_sec).filter(v => v != null);
+    if (durs.length) {
+      document.getElementById('sc-dur').textContent = (durs.reduce((a, b) => a + b, 0) / durs.length).toFixed(0);
+    }
+
+    renderScenarioTable(results);
+    renderScenarioP95Chart(summary);
+    if (type === 'hyperparameter_sweep') renderHeatmap(summary);
+  }).catch(() => {
+    document.getElementById('scenario-table-wrap').innerHTML = '<div class="loading">no data — run scenarios first</div>';
+  });
+}
+
+let _scenarioSortCol = null, _scenarioSortAsc = true;
+
+function renderScenarioTable(results) {
+  const wrap = document.getElementById('scenario-table-wrap');
+  if (!results.length) {
+    wrap.innerHTML = '<div class="loading">no scenario results found</div>';
+    return;
+  }
+
+  function kLateralColor(k) {
+    const t = clamp((k - 1.0) / 3.0, 0, 1);
+    const r = Math.round(lerp(0x76, 0xff, t));
+    const g = Math.round(lerp(0xff, 0x17, t));
+    const b = Math.round(lerp(0x03, 0x44, t));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function sortData(col) {
+    if (_scenarioSortCol === col) _scenarioSortAsc = !_scenarioSortAsc;
+    else { _scenarioSortCol = col; _scenarioSortAsc = true; }
+    results.sort((a, b) => {
+      const av = a[col] ?? '', bv = b[col] ?? '';
+      const cmp = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv));
+      return _scenarioSortAsc ? cmp : -cmp;
+    });
+    renderScenarioTable(results);
+  }
+
+  wrap.innerHTML = `<table class="data-table">
+    <thead><tr>
+      <th onclick="sortData('scenario_id')">SCENARIO ID</th>
+      <th onclick="sortData('description')">DESCRIPTION</th>
+      <th onclick="sortData('k_lateral')">K_LATERAL</th>
+      <th onclick="sortData('prebrake_horizon')">PREBRAKE</th>
+    </tr></thead>
+    <tbody>${results.slice(0, 30).map(r => `<tr>
+      <td style="color:var(--cyan);font-size:11px">${r.scenario_id || '—'}</td>
+      <td style="color:var(--muted);font-size:10px">${r.description || '—'}</td>
+      <td style="color:${kLateralColor(r.k_lateral || 2.5)};font-weight:bold">${r.k_lateral != null ? r.k_lateral.toFixed(1) : '—'}</td>
+      <td>${r.prebrake_horizon || '—'}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+
+  // Expose sortData globally
+  window.sortData = sortData;
+}
+
+function renderScenarioP95Chart(summary) {
+  const ctx = document.getElementById('chart-scenario-p95').getContext('2d');
+  if (!summary.length) return;
+  const minP95 = Math.min(...summary.map(r => r.p95_lateral_m || Infinity));
+  const colors = summary.map(r => r.p95_lateral_m === minP95 ? '#76ff03' : '#00e5ff');
+  makeChart('scenario-p95', ctx, {
+    type: 'bar',
+    data: {
+      labels: summary.map(r => (r.vehicle_id || r.scenario_id || '?').slice(0, 20)),
+      datasets: [{
+        label: 'p95 Lateral (m)',
+        data: summary.map(r => r.p95_lateral_m),
+        backgroundColor: colors,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#888', font: { size: 9 }, maxRotation: 45 } },
+        y: { grid: { color: '#2a2a2a' }, ticks: { color: '#555' } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function renderHeatmap(summary) {
+  const canvas = document.getElementById('heatmap-canvas');
+  if (!canvas || !summary.length) return;
+
+  // Extract unique K and H values from scenario IDs like "sweep_k1.0_h10"
+  const kVals = [...new Set(summary.map(r => {
+    const m = (r.vehicle_id || '').match(/k([\d.]+)/);
+    return m ? parseFloat(m[1]) : null;
+  }).filter(v => v != null))].sort((a, b) => a - b);
+
+  const hVals = [...new Set(summary.map(r => {
+    const m = (r.vehicle_id || '').match(/h(\d+)/);
+    return m ? parseInt(m[1]) : null;
+  }).filter(v => v != null))].sort((a, b) => a - b);
+
+  if (!kVals.length || !hVals.length) return;
+
+  const cellW = 60, cellH = 36;
+  const padL = 60, padT = 40, padR = 20, padB = 40;
+  const W = padL + kVals.length * cellW + padR;
+  const H = padT + hVals.length * cellH + padB;
+
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  // Build lookup
+  const lookup = {};
+  summary.forEach(r => {
+    const km = (r.vehicle_id || '').match(/k([\d.]+)/);
+    const hm = (r.vehicle_id || '').match(/h(\d+)/);
+    if (km && hm) lookup[`${km[1]}_${hm[1]}`] = r.p95_lateral_m || 0;
+  });
+
+  const allVals = Object.values(lookup).filter(v => !isNaN(v));
+  const minV = allVals.length ? Math.min(...allVals) : 0;
+  const maxV = allVals.length ? Math.max(...allVals) : 1;
+
+  function heatColor(v) {
+    const t = clamp((v - minV) / (maxV - minV || 1), 0, 1);
+    // dark blue → bright cyan
+    const r = Math.round(lerp(0x00, 0x00, t));
+    const g = Math.round(lerp(0x10, 0xe5, t));
+    const b = Math.round(lerp(0x40, 0xff, t));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  // Draw cells
+  kVals.forEach((k, ki) => {
+    hVals.forEach((h, hi) => {
+      const v = lookup[`${k}_${h}`];
+      const x = padL + ki * cellW;
+      const y = padT + hi * cellH;
+      ctx.fillStyle = v != null ? heatColor(v) : '#1a1a1a';
+      ctx.fillRect(x, y, cellW - 1, cellH - 1);
+      if (v != null) {
+        ctx.fillStyle = '#111';
+        ctx.font = '10px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(v.toFixed(3), x + cellW / 2, y + cellH / 2);
+      }
+    });
+  });
+
+  // X axis labels (K_LATERAL)
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Courier New';
+  ctx.textAlign = 'center';
+  kVals.forEach((k, i) => {
+    ctx.fillText(k.toFixed(1), padL + i * cellW + cellW / 2, padT - 12);
+  });
+  ctx.fillStyle = '#555';
+  ctx.font = '9px Courier New';
+  ctx.fillText('K_LATERAL →', padL + kVals.length * cellW / 2, 10);
+
+  // Y axis labels (PREBRAKE_HORIZON)
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Courier New';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  hVals.forEach((h, i) => {
+    ctx.fillText(h, padL - 8, padT + i * cellH + cellH / 2);
+  });
+  ctx.save();
+  ctx.translate(12, padT + hVals.length * cellH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#555';
+  ctx.font = '9px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText('↑ PREBRAKE_HORIZON', 0, 0);
+  ctx.restore();
+
+  // Color legend
+  const lx = padL, ly = H - 24, lw = kVals.length * cellW;
+  const grad = ctx.createLinearGradient(lx, 0, lx + lw, 0);
+  grad.addColorStop(0, heatColor(minV));
+  grad.addColorStop(1, heatColor(maxV));
+  ctx.fillStyle = grad;
+  ctx.fillRect(lx, ly, lw, 8);
+  ctx.fillStyle = '#555';
+  ctx.font = '9px Courier New';
+  ctx.textAlign = 'left';
+  ctx.fillText(minV.toFixed(3), lx, ly + 20);
+  ctx.textAlign = 'right';
+  ctx.fillText(maxV.toFixed(3), lx + lw, ly + 20);
+  ctx.textAlign = 'center';
+  ctx.fillText('p95 lateral (m)', lx + lw / 2, ly + 20);
+}
+</script>
+</body>
+</html>
