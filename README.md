@@ -6,7 +6,7 @@
 
 ## What This Is
 
-A full-stack, containerised runtime that places multiple autonomous vehicle agents on a road network and simulates their movement at 20 Hz. Each vehicle is an independent Docker container running its own control algorithm. A central environment process owns world state, distributes personalised observations, integrates physics, and broadcasts live snapshots to a browser visualiser — all over a NATS message bus.
+A end-to-end, full-stack, containerised runtime with k8n orchestration that places multiple autonomous vehicle agents on a road network and simulates their movement at 20 Hz. Each vehicle is an independent Docker container running its own control algorithm. A central environment process owns world state, distributes personalised observations, integrates physics, and broadcasts live snapshots to a browser visualiser — all over a NATS message bus.
 
 A PySpark analytics pipeline runs alongside the simulation, capturing live telemetry, computing historical aggregates, building ML-ready datasets, and running scenario tests — turning raw simulation output into structured insight.
 
@@ -24,7 +24,7 @@ A PySpark analytics pipeline runs alongside the simulation, capturing live telem
 | Raw telemetry must be analysable at scale | PySpark pipeline ingests NATS snapshots into Parquet datasets |
 | Real-time metrics must be visible without stopping the sim | Streaming Spark job feeds a live dashboard over WebSocket |
 
-This pattern — **environment + message bus + stateless agents + analytics pipeline** — scales from a laptop to a Kubernetes cluster with minimal change.
+This pattern — **distributed environment + message bus + stateless agents + analytics pipeline** — scales from a laptop to a Kubernetes cluster with minimal change.
 
 ---
 
