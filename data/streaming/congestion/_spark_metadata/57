@@ -1,5 +1,0 @@
-v1
-{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/congestion/part-00000-e7d412e4-a80d-4e38-815c-ae32203242c5-c000.json","size":245,"isDir":false,"modificationTime":1775107826316,"blockReplication":1,"blockSize":33554432,"action":"add"}
-{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/congestion/part-00001-00fb787f-fe98-4a7d-ba54-4f58dab8e196-c000.json","size":247,"isDir":false,"modificationTime":1775107826316,"blockReplication":1,"blockSize":33554432,"action":"add"}
-{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/congestion/part-00002-803ac984-0026-4920-a292-14433ba78884-c000.json","size":247,"isDir":false,"modificationTime":1775107826310,"blockReplication":1,"blockSize":33554432,"action":"add"}
-{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/congestion/part-00003-f6d1ebc5-d193-45ac-af88-723b93189785-c000.json","size":246,"isDir":false,"modificationTime":1775107826317,"blockReplication":1,"blockSize":33554432,"action":"add"}

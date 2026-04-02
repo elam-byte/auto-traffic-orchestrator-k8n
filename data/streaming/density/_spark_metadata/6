@@ -1,5 +1,0 @@
-v1
-{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/density/part-00000-a818afad-21eb-4ada-9761-ab9e80b20361-c000.json","size":421,"isDir":false,"modificationTime":1775107571647,"blockReplication":1,"blockSize":33554432,"action":"add"}
-{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/density/part-00001-44622e64-7a8f-4f1d-91af-2cbe5c614c66-c000.json","size":703,"isDir":false,"modificationTime":1775107571648,"blockReplication":1,"blockSize":33554432,"action":"add"}
-{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/density/part-00002-40244cea-3e70-4b6d-8898-826386b56bb8-c000.json","size":984,"isDir":false,"modificationTime":1775107571711,"blockReplication":1,"blockSize":33554432,"action":"add"}
-{"path":"file:///home/elam/Home/Claude/AutonomousTrafficSimulator/data/streaming/density/part-00003-6507c1fc-6548-4def-b8ca-46ee9cf13e71-c000.json","size":422,"isDir":false,"modificationTime":1775107571659,"blockReplication":1,"blockSize":33554432,"action":"add"}
