@@ -1,4 +1,4 @@
-# Autonomous Traffic Simulator (ATS)
+# Multi-Agent orchestrator (Autonomous Traffic Simulator (ATS))
 
 > A case study in distributed, real-time multi-agent orchestration — the same class of systems that powers **autonomous vehicle fleets**, **live financial engines**, **cloud resource allocation systems**, **news feed ranking systems**, **dynamic pricing and recommendation engines**, **robotic warehouses**, and **drone swarms**. These systems operate under partial observability and strict latency constraints, optimizing global objectives through decentralized, real-time decision-making.
 
