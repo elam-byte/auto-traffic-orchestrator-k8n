@@ -33,3 +33,6 @@ output/viz-gateway-capture.json
 
 #datafile
 data/
+
+#analytics
+analytics/RUNBOOK.md
